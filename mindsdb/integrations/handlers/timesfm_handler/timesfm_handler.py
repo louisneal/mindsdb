@@ -98,11 +98,12 @@ class TimesfmHandler(BaseMLEngine):
         inputs = df_sorted[data_col_name].dropna().values
 
         point_forecast, quantile_forecast = model.forecast(horizon=horizon, inputs=[inputs])
-        # 构建结果
+
         result_data = {
-            'data_col': point_forecast[0],  # 点预测
-            'lower_bound': quantile_forecast[0, :, 1],  # 10%分位数
-            'upper_bound': quantile_forecast[0, :, -1],  # 90%分位数
+            'forecast_value': point_forecast[0],  # 点预测
+            'confidence_level' : '0.8',
+            'prediction_interval_lower_bound': quantile_forecast[0, :, 1],  # 10%分位数
+            'prediction_interval_upper_bound': quantile_forecast[0, :, -1],  # 90%分位数
         }
 
         # 生成未来日期
@@ -110,6 +111,6 @@ class TimesfmHandler(BaseMLEngine):
 
         # 拼接结果
         result_df = pd.DataFrame(result_data)
-        result_df.insert(0, timestamp_col_name, future_dates)
+        result_df.insert(0, 'forecast_timestamp', future_dates)
 
         return result_df
