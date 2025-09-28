@@ -24,10 +24,10 @@ USING engine = 'timesfm'
 SELECT tf.* 
 FROM timesfm as tf 
 JOIN files.sales_data
-WHERE tf.data_col='sales' AND tf.timestamp_col = 'date' AND tf.horizon = 12
+WHERE tf.data_col='sales' AND tf.timestamp_col = 'date' AND tf.horizon = 2
 ```
 
-### TimesFM 模型预测返回的结果样例
+### 3. 查看 TimesFM 预测返回结果
 | forecast_timestamp | forecast_value | confidence_level | prediction_interval_lower_bound | prediction_interval_upper_bound |
 | ------------------ | -------------- | ---------------- | ------------------------------- | ------------------------------- |
 | 2018-01-15 00:00:00.000000 | 52186.92578125 | 0.8 | 44882.734375 | 58594.67578125 |
