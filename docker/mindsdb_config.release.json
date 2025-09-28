@@ -5,6 +5,7 @@
     },
     "debug": false,
     "integrations": {},
+    "gui": {"open_on_start": false, "autoupdate": false},
     "api": {
         "http": {
             "host": "0.0.0.0",

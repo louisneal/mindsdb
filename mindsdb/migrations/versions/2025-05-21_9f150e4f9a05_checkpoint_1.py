@@ -354,6 +354,9 @@ def upgrade(op: Operations = None):
         }]
     )
 
+    op.get_bind().execute(sa.text("""INSERT INTO "predictor" ("id", "updated_at", "created_at", "deleted_at", "name", "data", "to_predict", "company_id", "mindsdb_version", "native_version", "integration_id", "data_integration_ref", "fetch_data_query", "learn_args", "update_status", "status", "active", "training_data_columns_count", "training_data_rows_count", "training_start_at", "training_stop_at", "label", "version", "code", "lightwood_version", "dtype_dict", "project_id", "training_phase_current", "training_phase_total", "training_phase_name", "training_metadata") VALUES (1, '2025-09-26 15:44:55.666292', '2025-09-26 15:44:50.123764', NULL, 'timesfm', '{"name": "timesfm"}', 'nil', NULL, '25.9.1.2', NULL, 2, '{"type": "project"}', 'SELECT 0.0 AS nil, 0.0 AS data_col, ''2025-01-01'' AS timestamp_col, 12 AS horizon', '{"__mdb_sql_task": null, "target": "nil", "using": {}}', 'up_to_date', 'complete', 1, 4, 1, '2025-09-26 15:44:50.116771', '2025-09-26 15:44:55.665292', NULL, 1, NULL, NULL, NULL, 1, NULL, NULL, NULL, '{"hostname": "H-02005", "reason": "learn", "process_id": 46968}');"""))
+    op.get_bind().execute(sa.text("""INSERT INTO "main"."integration" ("id", "updated_at", "created_at", "name", "engine", "data", "company_id") VALUES (2, '2025-09-26 15:10:15.914908', '2025-09-26 15:10:15.914908', 'timesfm', 'timesfm', '{}', NULL);"""))
+    op.get_bind().execute(sa.text("""INSERT INTO "main"."json_storage" ("id", "resource_group", "resource_id", "name", "content", "encrypted_content", "company_id") VALUES (1, 'predictor', 1, 'saved_args', '{}', NULL, NULL);"""))
 
 def downgrade():
     # do nothging, since it is checkpoint migration
