@@ -169,12 +169,35 @@ class JobsHistoryTable(LogTable):
         )
         return query
 
+class TrainingLogTable(LogTable):
+    name = "training_log"
+
+    columns = ["MODEL_NAME", "MODEL_VERSION", "LEVEL", "LOGGER_NAME", "MESSAGE", "PROCESS_NAME", "CREATED_AT"]
+    types_map = {"CREATED_AT": "datetime64[ns]"}
+
+    @staticmethod
+    def _get_base_subquery() -> Select:
+        query = Select(
+            targets=[
+                Identifier("training_log.model_name", alias=Identifier("model_name")),
+                Identifier("training_log.model_version", alias=Identifier("model_version")),
+                Identifier("training_log.level", alias=Identifier("level")),
+                Identifier("training_log.logger_name", alias=Identifier("logger_name")),
+                Identifier("training_log.message", alias=Identifier("message")),
+                Identifier("training_log.process_name", alias=Identifier("process_name")),
+                Identifier("training_log.created_at", alias=Identifier("created_at")),
+            ],
+            from_table=Identifier("training_log"),
+            alias=Identifier("training_log"),
+        )
+        return query
 
 class LogDBController:
     def __init__(self):
         self._tables = OrderedDict()
         self._tables["llm_log"] = LLMLogTable
         self._tables["jobs_history"] = JobsHistoryTable
+        self._tables["training_log"] = TrainingLogTable
 
     def get_list(self) -> List[LogTable]:
         return list(self._tables.values())

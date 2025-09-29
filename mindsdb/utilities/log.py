@@ -4,7 +4,7 @@ import threading
 from logging.config import dictConfig
 
 from mindsdb.utilities.config import config as app_config
-
+import mindsdb.interfaces.storage.db as db
 
 logging_initialized = False
 
@@ -85,6 +85,34 @@ class FileFormatter(logging.Formatter):
 
         return super().format(record)
 
+
+class DatabaseHandler(logging.Handler):
+    """数据库日志处理器，将日志记录到training_log表中"""
+
+    def emit(self, record):
+        try:
+            training_info = get_training_info()
+            if not training_info:
+                return
+
+            log_record = db.TrainingLog(
+                model_name=training_info.get("model_name"),
+                model_version=training_info.get("model_version"),
+                level=record.levelname,
+                logger_name=record.name,
+                message=record.getMessage(),
+                process_name=record.processName,
+            )
+
+            db.session.add(log_record)
+            db.session.commit()
+
+        except Exception as e:
+            # 避免日志记录失败导致程序崩溃
+            import sys
+            print(f"Failed to write log to database: {e}", file=sys.stderr)
+
+
 FORMATTERS = {
     "default": {"()": ColorFormatter},
     "json": {"()": JsonFormatter},
@@ -138,6 +166,14 @@ def get_handlers_config(process_name: str) -> dict:
             "maxBytes": file_handler_config["maxBytes"],  # 0.5 Mb
             "backupCount": file_handler_config["backupCount"],
         }
+
+    # 添加数据库处理器
+    handlers_config["database"] = {
+        "class": "mindsdb.utilities.log.DatabaseHandler",
+        "formatter": "default",
+        "level": logging.INFO,  # 只记录INFO级别以上的日志到数据库
+    }
+
     return handlers_config
 
 

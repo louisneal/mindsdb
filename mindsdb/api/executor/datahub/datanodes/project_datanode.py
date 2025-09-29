@@ -18,6 +18,7 @@ from mindsdb.api.executor.datahub.classes.tables_row import TablesRow
 from mindsdb.api.executor.datahub.classes.response import DataHubResponse
 from mindsdb.utilities.partitioning import process_dataframe_in_partitions
 from mindsdb.integrations.libs.response import INF_SCHEMA_COLUMNS_NAMES
+import mindsdb.interfaces.storage.db as db
 
 
 class ProjectDataNode(DataNode):
@@ -121,6 +122,10 @@ class ProjectDataNode(DataNode):
                 kb_table.delete_query(query)
                 return DataHubResponse()
 
+            # support deleting from training_log table
+            if query_table == "training_log":
+                return self._delete_training_log(query)
+
             raise NotImplementedError(f"Can't delete object: {query_table}")
 
         elif isinstance(query, Select):
@@ -191,3 +196,62 @@ class ProjectDataNode(DataNode):
             kb_table.insert(df, params=params)
             return DataHubResponse()
         raise NotImplementedError(f"Can't create table {table_name}")
+
+    def _delete_training_log(self, query: Delete) -> DataHubResponse:
+        if query.where is None:
+            raise ValueError("Refusing to delete all rows from training_log without a WHERE clause")
+
+        def ast_to_sa(expr):
+            from mindsdb_sql_parser.ast import BinaryOperation, Identifier, Constant
+
+            if isinstance(expr, BinaryOperation):
+                op = expr.op.lower()
+                if op in ("and", "or"):
+                    left = ast_to_sa(expr.args[0])
+                    right = ast_to_sa(expr.args[1])
+                    if op == "and":
+                        return left & right
+                    return left | right
+
+                # comparison
+                left_node, right_node = expr.args
+                if not isinstance(left_node, Identifier):
+                    raise ValueError("Left side of condition must be a column identifier")
+                column_name = left_node.parts[-1].lower()
+                try:
+                    column = getattr(db.TrainingLog, column_name)
+                except AttributeError:
+                    raise ValueError(f"Unknown column in training_log: {column_name}")
+
+                # constants / lists
+                if isinstance(right_node, Constant):
+                    value = right_node.value
+                else:
+                    value = getattr(right_node, "value", right_node)
+
+                if op == "=":
+                    return column == value
+                if op in ("!=", "<>"):
+                    return column != value
+                if op == ">":
+                    return column > value
+                if op == ">=":
+                    return column >= value
+                if op == "<":
+                    return column < value
+                if op == "<=":
+                    return column <= value
+                if op == "in":
+                    return column.in_(value)
+                if op == "like":
+                    return column.like(value)
+                if op == "ilike":
+                    return column.ilike(value)
+                raise ValueError(f"Unsupported operator: {expr.op}")
+
+            raise ValueError("Unsupported WHERE expression for training_log delete")
+
+        sa_filter = ast_to_sa(query.where)
+        db.session.query(db.TrainingLog).filter(sa_filter).delete(synchronize_session=False)
+        db.session.commit()
+        return DataHubResponse()

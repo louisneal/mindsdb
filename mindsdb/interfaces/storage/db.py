@@ -14,8 +14,10 @@ from sqlalchemy import (
     LargeBinary,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     create_engine,
+    func,
     text,
     types,
 )
@@ -817,3 +819,27 @@ class MetaForeignKeys(Base):
 
     def as_string(self) -> str:
         return f"{self.child_column.name} in {self.child_table.name} references {self.parent_column.name} in {self.parent_table.name}"
+
+class TrainingLog(Base):
+    """训练日志表，用于记录训练过程中的日志信息"""
+    __tablename__ = "training_log"
+    id: int = Column(Integer, primary_key=True)
+    model_name: str = Column(String, nullable=False, comment="Model name")
+    model_version: str = Column(String, nullable=False, comment="Model version")
+    level: str = Column(String, nullable=False, comment="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    logger_name: str = Column(String, nullable=True, comment="Logger name")
+    message: str = Column(Text, nullable=False, comment="Log message")
+    process_name: str = Column(String, nullable=True, comment="Process name")
+    created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())
+
+    def as_dict(self) -> Dict:
+        return {
+            "id": self.id,
+            "model_name": self.model_name,
+            "model_version": self.model_version,
+            "level": self.level,
+            "logger_name": self.logger_name,
+            "message": self.message,
+            "process_name": self.process_name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
