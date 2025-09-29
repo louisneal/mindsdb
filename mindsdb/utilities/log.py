@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 from logging.config import dictConfig
 
 from mindsdb.utilities.config import config as app_config
@@ -7,6 +8,19 @@ from mindsdb.utilities.config import config as app_config
 
 logging_initialized = False
 
+# 线程本地存储训练ID
+_training_info_local = threading.local()
+
+def set_training_info(model_name, model_version):
+    """设置当前线程的训练信息"""
+    _training_info_local.training_info = {
+        "model_name": model_name,
+        "model_version": model_version
+    }
+
+def get_training_info():
+    """获取当前线程的训练信息"""
+    return getattr(_training_info_local, "training_info", None)
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -18,8 +32,13 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "time": record.created,
         }
-        return json.dumps(log_record)
 
+        # 获取当前线程的训练信息
+        training_info = get_training_info()
+        if training_info:
+            if isinstance(training_info, dict):
+                log_record.update(training_info)
+        return json.dumps(log_record)
 
 class ColorFormatter(logging.Formatter):
     green = "\x1b[32;20m"
@@ -28,7 +47,7 @@ class ColorFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(asctime)s %(processName)15s %(levelname)-8s %(name)s: %(message)s"
+    format = "%(asctime)s %(processName)15s %(levelname)-8s %(training_tag)s %(name)s: %(message)s"
 
     FORMATS = {
         logging.DEBUG: logging.Formatter(green + format + reset),
@@ -39,14 +58,37 @@ class ColorFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        # 从线程本地存储里获取训练信息
+        training_info = get_training_info()
+        if training_info:
+            if isinstance(training_info, dict):
+                record.training_tag = f"[{training_info.get('model_name')}:{training_info.get('model_version')}]"
+        else:
+            record.training_tag = ""
+
         log_fmt = self.FORMATS.get(record.levelno)
         return log_fmt.format(record)
 
 
+class FileFormatter(logging.Formatter):
+    def __init__(self):
+        super().__init__("%(asctime)s %(processName)15s %(levelname)-8s %(training_tag)s %(name)s: %(message)s")
+
+    def format(self, record):
+        # 从线程本地存储里获取训练信息
+        training_info = get_training_info()
+        if training_info:
+            if isinstance(training_info, dict):
+                record.training_tag = f"[{training_info.get('model_name')}:{training_info.get('model_version')}]"
+        else:
+            record.training_tag = ""
+
+        return super().format(record)
+
 FORMATTERS = {
     "default": {"()": ColorFormatter},
     "json": {"()": JsonFormatter},
-    "file": {"format": "%(asctime)s %(processName)15s %(levelname)-8s %(name)s: %(message)s"},
+    "file": {"()": FileFormatter},
 }
 
 

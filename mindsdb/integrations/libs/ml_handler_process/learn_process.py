@@ -45,6 +45,10 @@ def learn_process(data_integration_ref: dict, problem_definition: dict, fetch_da
             flag_modified(predictor_record, 'training_metadata')
             db.session.commit()
 
+            # 设置训练ID到线程本地存储
+            from mindsdb.utilities.log import set_training_info
+            set_training_info(predictor_record.name, predictor_record.version)
+
             target = problem_definition.get('target', None)
             training_data_df = None
             if data_integration_ref is not None:
