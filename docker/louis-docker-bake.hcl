@@ -7,7 +7,7 @@ variable "IMAGE" {
 }
 
 variable "VERSION" {
-  default = "1.0.1"
+  default = "1.0.2"
 }
 
 variable "PLATFORMS" {

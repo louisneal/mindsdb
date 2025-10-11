@@ -70,6 +70,10 @@ RUN --mount=type=cache,target=/root/.cache \
 COPY mindsdb/integrations/handlers/timesfm_handler/pkgs/timesfm-2.0.0-py3-none-any.whl ./mindsdb/integrations/handlers/timesfm_handler/pkgs/
 RUN uv pip install mindsdb/integrations/handlers/timesfm_handler/pkgs/timesfm-2.0.0-py3-none-any.whl --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
+RUN mkdir -p /root/nltk_data && \
+    python -m nltk.downloader -d /root/nltk_data wordnet punkt stopwords && \
+    ls -lh /root/nltk_data
+
 # Copy all of the mindsdb code over finally
 # Here is where we invalidate the cache again if ANY file has changed
 COPY . .
@@ -77,7 +81,7 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache uv pip install --index-url https://pypi.tuna.tsinghua.edu.cn/simple --no-deps "."
 
 COPY docker/mindsdb_config.release.json /root/mindsdb_config.json
-COPY louis/nltk_data /root/nltk_data
+#COPY louis/nltk_data /root/nltk_data
 COPY louis/static /root/mdb_storage/static
 COPY louis/models /root/mdb_storage/models
 
