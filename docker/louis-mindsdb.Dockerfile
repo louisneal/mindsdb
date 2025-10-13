@@ -71,7 +71,7 @@ COPY mindsdb/integrations/handlers/timesfm_handler/pkgs/timesfm-2.0.0-py3-none-a
 RUN uv pip install mindsdb/integrations/handlers/timesfm_handler/pkgs/timesfm-2.0.0-py3-none-any.whl --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN mkdir -p /root/nltk_data && \
-    python -m nltk.downloader -d /root/nltk_data wordnet punkt stopwords && \
+    python -m nltk.downloader -d /root/nltk_data wordnet punkt punkt_tab stopwords && \
     ls -lh /root/nltk_data
 
 # Copy all of the mindsdb code over finally
@@ -84,6 +84,15 @@ COPY docker/mindsdb_config.release.json /root/mindsdb_config.json
 #COPY louis/nltk_data /root/nltk_data
 COPY louis/static /root/mdb_storage/static
 COPY louis/models /root/mdb_storage/models
+# 确保父目录存在
+RUN mkdir -p /root/.cache/huggingface
+
+# 复制 tar 包进镜像
+COPY louis/huggingface_cache.tar /root/.cache/
+
+# 解压到 huggingface 目录
+RUN tar -xhf /root/.cache/huggingface_cache.tar -C /root/.cache/huggingface && \
+    rm /root/.cache/huggingface_cache.tar
 
 ENV PYTHONUNBUFFERED=1
 ENV MINDSDB_DOCKER_ENV=1
